@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   MapPin, 
@@ -27,7 +27,8 @@ import {
   FileText,
   Route,
   Save,
-  CheckCircle
+  CheckCircle,
+  X
 } from 'lucide-react';
 import ItineraryPlanner from './ItineraryPlanner';
 import VisaInformation from './VisaInformation';
@@ -116,6 +117,61 @@ interface SavedTrip {
   itinerary?: TripOption;
 }
 
+// Popular cities for autocomplete
+const popularCities = [
+  "New York, USA",
+  "London, UK",
+  "Paris, France",
+  "Tokyo, Japan",
+  "Rome, Italy",
+  "Barcelona, Spain",
+  "Amsterdam, Netherlands",
+  "Berlin, Germany",
+  "Sydney, Australia",
+  "Dubai, UAE",
+  "Singapore",
+  "Hong Kong",
+  "Bangkok, Thailand",
+  "Istanbul, Turkey",
+  "Prague, Czech Republic",
+  "Vienna, Austria",
+  "Madrid, Spain",
+  "Venice, Italy",
+  "San Francisco, USA",
+  "Los Angeles, USA",
+  "Chicago, USA",
+  "Miami, USA",
+  "Toronto, Canada",
+  "Vancouver, Canada",
+  "Mexico City, Mexico",
+  "Rio de Janeiro, Brazil",
+  "Buenos Aires, Argentina",
+  "Cairo, Egypt",
+  "Cape Town, South Africa",
+  "Moscow, Russia",
+  "Seoul, South Korea",
+  "Beijing, China",
+  "Shanghai, China",
+  "Mumbai, India",
+  "New Delhi, India",
+  "Kyoto, Japan",
+  "Osaka, Japan",
+  "Bali, Indonesia",
+  "Phuket, Thailand",
+  "Auckland, New Zealand",
+  "Queenstown, New Zealand",
+  "Zurich, Switzerland",
+  "Geneva, Switzerland",
+  "Oslo, Norway",
+  "Stockholm, Sweden",
+  "Copenhagen, Denmark",
+  "Helsinki, Finland",
+  "Reykjavik, Iceland",
+  "Dublin, Ireland",
+  "Edinburgh, UK",
+  "Brussels, Belgium"
+];
+
 const TravelBuddyAssistant: React.FC = () => {
   const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'save-trip'>('input');
   const [travelInput, setTravelInput] = useState<TravelInput>({
@@ -137,11 +193,66 @@ const TravelBuddyAssistant: React.FC = () => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [tripName, setTripName] = useState('');
+  
+  // Autocomplete states
+  const [startingLocationSuggestions, setStartingLocationSuggestions] = useState<string[]>([]);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<string[]>([]);
+  const [showStartingSuggestions, setShowStartingSuggestions] = useState(false);
+  const [showDestinationSuggestions, setShowDestinationSuggestions] = useState(false);
 
   const activityOptions = [
     'sightseeing', 'museums', 'nature', 'shopping', 'food', 
     'nightlife', 'relaxation', 'family-friendly', 'adventure'
   ];
+
+  // Filter suggestions based on input
+  useEffect(() => {
+    if (travelInput.startingLocation.trim() !== '') {
+      const filtered = popularCities.filter(city => 
+        city.toLowerCase().includes(travelInput.startingLocation.toLowerCase())
+      );
+      setStartingLocationSuggestions(filtered.slice(0, 5));
+      setShowStartingSuggestions(filtered.length > 0);
+    } else {
+      setShowStartingSuggestions(false);
+    }
+  }, [travelInput.startingLocation]);
+
+  useEffect(() => {
+    if (travelInput.destination.trim() !== '') {
+      const filtered = popularCities.filter(city => 
+        city.toLowerCase().includes(travelInput.destination.toLowerCase())
+      );
+      setDestinationSuggestions(filtered.slice(0, 5));
+      setShowDestinationSuggestions(filtered.length > 0);
+    } else {
+      setShowDestinationSuggestions(false);
+    }
+  }, [travelInput.destination]);
+
+  // Handle suggestion selection
+  const handleSelectStartingLocation = (location: string) => {
+    setTravelInput(prev => ({ ...prev, startingLocation: location }));
+    setShowStartingSuggestions(false);
+  };
+
+  const handleSelectDestination = (location: string) => {
+    setTravelInput(prev => ({ ...prev, destination: location }));
+    setShowDestinationSuggestions(false);
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowStartingSuggestions(false);
+      setShowDestinationSuggestions(false);
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   // Save trip function
   const saveTrip = (tripData: TripOption) => {
@@ -532,7 +643,7 @@ const TravelBuddyAssistant: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <MapPin className="w-4 h-4 inline mr-1" />
             Starting Location
@@ -541,12 +652,37 @@ const TravelBuddyAssistant: React.FC = () => {
             type="text"
             value={travelInput.startingLocation}
             onChange={(e) => setTravelInput(prev => ({ ...prev, startingLocation: e.target.value }))}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (travelInput.startingLocation) {
+                setShowStartingSuggestions(true);
+              }
+            }}
             placeholder="e.g., New York, USA"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
+          {showStartingSuggestions && startingLocationSuggestions.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {startingLocationSuggestions.map((location, index) => (
+                <div
+                  key={index}
+                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectStartingLocation(location);
+                  }}
+                >
+                  <div className="flex items-center">
+                    <MapPin className="w-4 h-4 text-gray-400 mr-2" />
+                    <span>{location}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div>
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <MapPin className="w-4 h-4 inline mr-1" />
             Destination
@@ -555,9 +691,34 @@ const TravelBuddyAssistant: React.FC = () => {
             type="text"
             value={travelInput.destination}
             onChange={(e) => setTravelInput(prev => ({ ...prev, destination: e.target.value }))}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (travelInput.destination) {
+                setShowDestinationSuggestions(true);
+              }
+            }}
             placeholder="e.g., Paris, France"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
+          {showDestinationSuggestions && destinationSuggestions.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {destinationSuggestions.map((location, index) => (
+                <div
+                  key={index}
+                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectDestination(location);
+                  }}
+                >
+                  <div className="flex items-center">
+                    <MapPin className="w-4 h-4 text-gray-400 mr-2" />
+                    <span>{location}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -721,7 +882,7 @@ const TravelBuddyAssistant: React.FC = () => {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">🌍 Your Personalized Trip Options</h2>
-        <p className="text-gray-600 text-lg">
+        <p className="text-xl text-gray-600">
           I've created 3 complete travel plans for your trip from{' '}
           <span className="font-semibold text-indigo-600">{travelInput.startingLocation}</span> to{' '}
           <span className="font-semibold text-indigo-600">{travelInput.destination}</span>.
