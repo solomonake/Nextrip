@@ -27,8 +27,7 @@ import {
   FileText,
   Route,
   Save,
-  CheckCircle,
-  X
+  CheckCircle
 } from 'lucide-react';
 import ItineraryPlanner from './ItineraryPlanner';
 import VisaInformation from './VisaInformation';
@@ -117,61 +116,6 @@ interface SavedTrip {
   itinerary?: TripOption;
 }
 
-// Popular cities for autocomplete
-const popularCities = [
-  "New York, USA",
-  "London, UK",
-  "Paris, France",
-  "Tokyo, Japan",
-  "Rome, Italy",
-  "Barcelona, Spain",
-  "Amsterdam, Netherlands",
-  "Berlin, Germany",
-  "Sydney, Australia",
-  "Dubai, UAE",
-  "Singapore",
-  "Hong Kong",
-  "Bangkok, Thailand",
-  "Istanbul, Turkey",
-  "Prague, Czech Republic",
-  "Vienna, Austria",
-  "Madrid, Spain",
-  "Venice, Italy",
-  "San Francisco, USA",
-  "Los Angeles, USA",
-  "Chicago, USA",
-  "Miami, USA",
-  "Toronto, Canada",
-  "Vancouver, Canada",
-  "Mexico City, Mexico",
-  "Rio de Janeiro, Brazil",
-  "Buenos Aires, Argentina",
-  "Cairo, Egypt",
-  "Cape Town, South Africa",
-  "Moscow, Russia",
-  "Seoul, South Korea",
-  "Beijing, China",
-  "Shanghai, China",
-  "Mumbai, India",
-  "New Delhi, India",
-  "Kyoto, Japan",
-  "Osaka, Japan",
-  "Bali, Indonesia",
-  "Phuket, Thailand",
-  "Auckland, New Zealand",
-  "Queenstown, New Zealand",
-  "Zurich, Switzerland",
-  "Geneva, Switzerland",
-  "Oslo, Norway",
-  "Stockholm, Sweden",
-  "Copenhagen, Denmark",
-  "Helsinki, Finland",
-  "Reykjavik, Iceland",
-  "Dublin, Ireland",
-  "Edinburgh, UK",
-  "Brussels, Belgium"
-];
-
 const TravelBuddyAssistant: React.FC = () => {
   const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'save-trip'>('input');
   const [travelInput, setTravelInput] = useState<TravelInput>({
@@ -193,66 +137,90 @@ const TravelBuddyAssistant: React.FC = () => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [tripName, setTripName] = useState('');
-  
-  // Autocomplete states
-  const [startingLocationSuggestions, setStartingLocationSuggestions] = useState<string[]>([]);
-  const [destinationSuggestions, setDestinationSuggestions] = useState<string[]>([]);
-  const [showStartingSuggestions, setShowStartingSuggestions] = useState(false);
+  const [showStartingLocationSuggestions, setShowStartingLocationSuggestions] = useState(false);
   const [showDestinationSuggestions, setShowDestinationSuggestions] = useState(false);
+  const [filteredStartingLocations, setFilteredStartingLocations] = useState<string[]>([]);
+  const [filteredDestinations, setFilteredDestinations] = useState<string[]>([]);
 
   const activityOptions = [
     'sightseeing', 'museums', 'nature', 'shopping', 'food', 
     'nightlife', 'relaxation', 'family-friendly', 'adventure'
   ];
 
-  // Filter suggestions based on input
+  const popularCities = [
+    'New York, USA',
+    'London, UK',
+    'Paris, France',
+    'Tokyo, Japan',
+    'Sydney, Australia',
+    'Rome, Italy',
+    'Barcelona, Spain',
+    'Amsterdam, Netherlands',
+    'Berlin, Germany',
+    'Dubai, UAE',
+    'Singapore, Singapore',
+    'Hong Kong, China',
+    'Bangkok, Thailand',
+    'Istanbul, Turkey',
+    'Rio de Janeiro, Brazil',
+    'Cape Town, South Africa',
+    'Toronto, Canada',
+    'Mexico City, Mexico',
+    'Mumbai, India',
+    'Cairo, Egypt',
+    'Athens, Greece',
+    'Vienna, Austria',
+    'Prague, Czech Republic',
+    'Marrakech, Morocco',
+    'Kyoto, Japan',
+    'Seoul, South Korea',
+    'Lisbon, Portugal',
+    'Copenhagen, Denmark',
+    'Stockholm, Sweden',
+    'Helsinki, Finland',
+    'Oslo, Norway',
+    'Zurich, Switzerland',
+    'Brussels, Belgium',
+    'Dublin, Ireland',
+    'Edinburgh, UK',
+    'Budapest, Hungary',
+    'Warsaw, Poland',
+    'Moscow, Russia',
+    'St. Petersburg, Russia',
+    'Beijing, China',
+    'Shanghai, China',
+    'Kuala Lumpur, Malaysia',
+    'Manila, Philippines',
+    'Jakarta, Indonesia',
+    'Auckland, New Zealand',
+    'Vancouver, Canada',
+    'San Francisco, USA',
+    'Los Angeles, USA',
+    'Chicago, USA',
+    'Miami, USA'
+  ];
+
   useEffect(() => {
-    if (travelInput.startingLocation.trim() !== '') {
+    if (travelInput.startingLocation) {
       const filtered = popularCities.filter(city => 
         city.toLowerCase().includes(travelInput.startingLocation.toLowerCase())
       );
-      setStartingLocationSuggestions(filtered.slice(0, 5));
-      setShowStartingSuggestions(filtered.length > 0);
+      setFilteredStartingLocations(filtered.slice(0, 5));
     } else {
-      setShowStartingSuggestions(false);
+      setFilteredStartingLocations([]);
     }
   }, [travelInput.startingLocation]);
 
   useEffect(() => {
-    if (travelInput.destination.trim() !== '') {
+    if (travelInput.destination) {
       const filtered = popularCities.filter(city => 
         city.toLowerCase().includes(travelInput.destination.toLowerCase())
       );
-      setDestinationSuggestions(filtered.slice(0, 5));
-      setShowDestinationSuggestions(filtered.length > 0);
+      setFilteredDestinations(filtered.slice(0, 5));
     } else {
-      setShowDestinationSuggestions(false);
+      setFilteredDestinations([]);
     }
   }, [travelInput.destination]);
-
-  // Handle suggestion selection
-  const handleSelectStartingLocation = (location: string) => {
-    setTravelInput(prev => ({ ...prev, startingLocation: location }));
-    setShowStartingSuggestions(false);
-  };
-
-  const handleSelectDestination = (location: string) => {
-    setTravelInput(prev => ({ ...prev, destination: location }));
-    setShowDestinationSuggestions(false);
-  };
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowStartingSuggestions(false);
-      setShowDestinationSuggestions(false);
-    };
-    
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
 
   // Save trip function
   const saveTrip = (tripData: TripOption) => {
@@ -632,6 +600,17 @@ const TravelBuddyAssistant: React.FC = () => {
     setStep('visa');
   };
 
+  const handleBudgetChange = (field: keyof TravelInput['budget'], value: string) => {
+    const numValue = value === '' ? 0 : parseInt(value);
+    setTravelInput(prev => ({
+      ...prev,
+      budget: {
+        ...prev.budget,
+        [field]: numValue
+      }
+    }));
+  };
+
   const renderInput = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -652,30 +631,24 @@ const TravelBuddyAssistant: React.FC = () => {
             type="text"
             value={travelInput.startingLocation}
             onChange={(e) => setTravelInput(prev => ({ ...prev, startingLocation: e.target.value }))}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (travelInput.startingLocation) {
-                setShowStartingSuggestions(true);
-              }
-            }}
+            onFocus={() => setShowStartingLocationSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowStartingLocationSuggestions(false), 200)}
             placeholder="e.g., New York, USA"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          {showStartingSuggestions && startingLocationSuggestions.length > 0 && (
+          {showStartingLocationSuggestions && filteredStartingLocations.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-              {startingLocationSuggestions.map((location, index) => (
+              {filteredStartingLocations.map((location, index) => (
                 <div
                   key={index}
-                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelectStartingLocation(location);
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                  onClick={() => {
+                    setTravelInput(prev => ({ ...prev, startingLocation: location }));
+                    setShowStartingLocationSuggestions(false);
                   }}
                 >
-                  <div className="flex items-center">
-                    <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                    <span>{location}</span>
-                  </div>
+                  <MapPin className="w-4 h-4 text-gray-500 mr-2" />
+                  {location}
                 </div>
               ))}
             </div>
@@ -691,30 +664,24 @@ const TravelBuddyAssistant: React.FC = () => {
             type="text"
             value={travelInput.destination}
             onChange={(e) => setTravelInput(prev => ({ ...prev, destination: e.target.value }))}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (travelInput.destination) {
-                setShowDestinationSuggestions(true);
-              }
-            }}
+            onFocus={() => setShowDestinationSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowDestinationSuggestions(false), 200)}
             placeholder="e.g., Paris, France"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          {showDestinationSuggestions && destinationSuggestions.length > 0 && (
+          {showDestinationSuggestions && filteredDestinations.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-              {destinationSuggestions.map((location, index) => (
+              {filteredDestinations.map((location, index) => (
                 <div
                   key={index}
-                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelectDestination(location);
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                  onClick={() => {
+                    setTravelInput(prev => ({ ...prev, destination: location }));
+                    setShowDestinationSuggestions(false);
                   }}
                 >
-                  <div className="flex items-center">
-                    <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                    <span>{location}</span>
-                  </div>
+                  <MapPin className="w-4 h-4 text-gray-500 mr-2" />
+                  {location}
                 </div>
               ))}
             </div>
@@ -729,12 +696,18 @@ const TravelBuddyAssistant: React.FC = () => {
             Flight Budget ($)
           </label>
           <input
-            type="number"
-            value={travelInput.budget.flight}
-            onChange={(e) => setTravelInput(prev => ({ 
-              ...prev, 
-              budget: { ...prev.budget, flight: parseInt(e.target.value) || 0 }
-            }))}
+            type="text"
+            value={travelInput.budget.flight || ''}
+            onChange={(e) => handleBudgetChange('flight', e.target.value)}
+            onFocus={(e) => {
+              if (travelInput.budget.flight === 0) {
+                setTravelInput(prev => ({
+                  ...prev,
+                  budget: { ...prev.budget, flight: 0 }
+                }));
+                e.target.value = '';
+              }
+            }}
             placeholder="500"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -746,12 +719,18 @@ const TravelBuddyAssistant: React.FC = () => {
             Hotel Budget ($)
           </label>
           <input
-            type="number"
-            value={travelInput.budget.hotel}
-            onChange={(e) => setTravelInput(prev => ({ 
-              ...prev, 
-              budget: { ...prev.budget, hotel: parseInt(e.target.value) || 0 }
-            }))}
+            type="text"
+            value={travelInput.budget.hotel || ''}
+            onChange={(e) => handleBudgetChange('hotel', e.target.value)}
+            onFocus={(e) => {
+              if (travelInput.budget.hotel === 0) {
+                setTravelInput(prev => ({
+                  ...prev,
+                  budget: { ...prev.budget, hotel: 0 }
+                }));
+                e.target.value = '';
+              }
+            }}
             placeholder="400"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -763,12 +742,18 @@ const TravelBuddyAssistant: React.FC = () => {
             Food Budget ($)
           </label>
           <input
-            type="number"
-            value={travelInput.budget.food}
-            onChange={(e) => setTravelInput(prev => ({ 
-              ...prev, 
-              budget: { ...prev.budget, food: parseInt(e.target.value) || 0 }
-            }))}
+            type="text"
+            value={travelInput.budget.food || ''}
+            onChange={(e) => handleBudgetChange('food', e.target.value)}
+            onFocus={(e) => {
+              if (travelInput.budget.food === 0) {
+                setTravelInput(prev => ({
+                  ...prev,
+                  budget: { ...prev.budget, food: 0 }
+                }));
+                e.target.value = '';
+              }
+            }}
             placeholder="300"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -780,12 +765,18 @@ const TravelBuddyAssistant: React.FC = () => {
             Tourism Budget ($)
           </label>
           <input
-            type="number"
-            value={travelInput.budget.tourism}
-            onChange={(e) => setTravelInput(prev => ({ 
-              ...prev, 
-              budget: { ...prev.budget, tourism: parseInt(e.target.value) || 0 }
-            }))}
+            type="text"
+            value={travelInput.budget.tourism || ''}
+            onChange={(e) => handleBudgetChange('tourism', e.target.value)}
+            onFocus={(e) => {
+              if (travelInput.budget.tourism === 0) {
+                setTravelInput(prev => ({
+                  ...prev,
+                  budget: { ...prev.budget, tourism: 0 }
+                }));
+                e.target.value = '';
+              }
+            }}
             placeholder="200"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -797,12 +788,18 @@ const TravelBuddyAssistant: React.FC = () => {
             Souvenirs Budget ($)
           </label>
           <input
-            type="number"
-            value={travelInput.budget.souvenirs}
-            onChange={(e) => setTravelInput(prev => ({ 
-              ...prev, 
-              budget: { ...prev.budget, souvenirs: parseInt(e.target.value) || 0 }
-            }))}
+            type="text"
+            value={travelInput.budget.souvenirs || ''}
+            onChange={(e) => handleBudgetChange('souvenirs', e.target.value)}
+            onFocus={(e) => {
+              if (travelInput.budget.souvenirs === 0) {
+                setTravelInput(prev => ({
+                  ...prev,
+                  budget: { ...prev.budget, souvenirs: 0 }
+                }));
+                e.target.value = '';
+              }
+            }}
             placeholder="100"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -831,7 +828,7 @@ const TravelBuddyAssistant: React.FC = () => {
           </label>
           <input
             type="number"
-            value={travelInput.tripDuration}
+            value={travelInput.tripDuration || ''}
             onChange={(e) => setTravelInput(prev => ({ ...prev, tripDuration: parseInt(e.target.value) || 0 }))}
             placeholder="7"
             min="1"
@@ -882,7 +879,7 @@ const TravelBuddyAssistant: React.FC = () => {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">🌍 Your Personalized Trip Options</h2>
-        <p className="text-xl text-gray-600">
+        <p className="text-lg text-gray-600">
           I've created 3 complete travel plans for your trip from{' '}
           <span className="font-semibold text-indigo-600">{travelInput.startingLocation}</span> to{' '}
           <span className="font-semibold text-indigo-600">{travelInput.destination}</span>.
