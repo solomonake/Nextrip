@@ -2,411 +2,486 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Sparkles, 
+  Send, 
   MapPin, 
   Calendar, 
   Users, 
+  Plane,
+  Building,
+  Car,
+  Camera,
+  MessageCircle,
   Search,
-  ArrowRight,
-  Globe,
-  Flag,
-  Compass,
   Heart,
-  MessageCircle
+  User,
+  X,
+  Check,
+  Star,
+  Globe,
+  Clock
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import ItineraryPlanner from './ItineraryPlanner';
+import VisaInformation from './VisaInformation';
+import CollabMatching from '../community/CollabMatching';
 
 const TravelBuddyAssistant: React.FC = () => {
-  const [destination, setDestination] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [travelStyle, setTravelStyle] = useState<string[]>([]);
-  const [interests, setInterests] = useState<string[]>([]);
-  const [step, setStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'buddies'>('input');
+  const [travelDetails, setTravelDetails] = useState({
+    startingLocation: '',
+    destination: '',
+    dateRange: '',
+    travelers: '1',
+    travelStyle: 'adventure',
+    budgets: {
+      flight: '0',
+      hotel: '0',
+      food: '0',
+      activities: '0',
+      souvenirs: '0'
+    }
+  });
+  const [showBuddies, setShowBuddies] = useState(false);
+
+  const handleInputChange = (field: string, value: string) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setTravelDetails(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent as keyof typeof prev] as Record<string, string>,
+          [child]: value.replace(/^0+/, '') // Remove leading zeros
+        }
+      }));
+    } else {
+      setTravelDetails(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStep('results');
+  };
+
+  const handleBack = () => {
+    if (step === 'results') {
+      setStep('input');
+    } else if (step === 'itinerary' || step === 'visa' || step === 'buddies') {
+      setStep('results');
+    }
+  };
 
   const travelStyles = [
-    { id: 'adventurous', label: 'Adventurous' },
-    { id: 'relaxed', label: 'Relaxed' },
-    { id: 'cultural', label: 'Cultural' },
-    { id: 'foodie', label: 'Foodie' },
-    { id: 'luxury', label: 'Luxury' },
-    { id: 'budget', label: 'Budget' },
-    { id: 'nightlife', label: 'Nightlife' },
-    { id: 'nature', label: 'Nature Lover' }
+    { id: 'adventure', label: 'Adventure Seeker', icon: '🏔️', description: 'Thrilling activities and exploration' },
+    { id: 'relaxation', label: 'Relaxation Enthusiast', icon: '🏖️', description: 'Peaceful and rejuvenating experiences' },
+    { id: 'culture', label: 'Culture Explorer', icon: '🏛️', description: 'Museums, history, and local traditions' },
+    { id: 'foodie', label: 'Food Connoisseur', icon: '🍜', description: 'Culinary experiences and local cuisine' },
+    { id: 'budget', label: 'Budget Traveler', icon: '💰', description: 'Value-focused, affordable options' },
+    { id: 'luxury', label: 'Luxury Traveler', icon: '✨', description: 'High-end experiences and accommodations' }
   ];
 
-  const interestOptions = [
-    { id: 'hiking', label: 'Hiking' },
-    { id: 'photography', label: 'Photography' },
-    { id: 'food', label: 'Local Cuisine' },
-    { id: 'museums', label: 'Museums' },
-    { id: 'shopping', label: 'Shopping' },
-    { id: 'beaches', label: 'Beaches' },
-    { id: 'nightlife', label: 'Nightlife' },
-    { id: 'history', label: 'History' },
-    { id: 'art', label: 'Art' },
-    { id: 'music', label: 'Music' },
-    { id: 'architecture', label: 'Architecture' },
-    { id: 'wildlife', label: 'Wildlife' }
-  ];
+  const renderInputForm = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto"
+    >
+      <div className="flex items-center mb-8">
+        <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mr-4">
+          <Sparkles className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">AI Travel Planner</h2>
+          <p className="text-gray-600">Tell me about your dream trip and I'll create the perfect itinerary</p>
+        </div>
+      </div>
 
-  const handleTravelStyleToggle = (styleId: string) => {
-    if (travelStyle.includes(styleId)) {
-      setTravelStyle(travelStyle.filter(id => id !== styleId));
-    } else {
-      setTravelStyle([...travelStyle, styleId]);
-    }
-  };
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <MapPin className="w-4 h-4 inline mr-1" />
+              Starting Location
+            </label>
+            <input
+              type="text"
+              value={travelDetails.startingLocation}
+              onChange={(e) => handleInputChange('startingLocation', e.target.value)}
+              placeholder="e.g., New York, USA"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <MapPin className="w-4 h-4 inline mr-1" />
+              Destination
+            </label>
+            <input
+              type="text"
+              value={travelDetails.destination}
+              onChange={(e) => handleInputChange('destination', e.target.value)}
+              placeholder="e.g., Paris, France"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+        </div>
 
-  const handleInterestToggle = (interestId: string) => {
-    if (interests.includes(interestId)) {
-      setInterests(interests.filter(id => id !== interestId));
-    } else {
-      setInterests([...interests, interestId]);
-    }
-  };
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Calendar className="w-4 h-4 inline mr-1" />
+              Date Range
+            </label>
+            <input
+              type="text"
+              value={travelDetails.dateRange}
+              onChange={(e) => handleInputChange('dateRange', e.target.value)}
+              placeholder="e.g., June 15-25, 2024"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4 inline mr-1" />
+              Number of Travelers
+            </label>
+            <select
+              value={travelDetails.travelers}
+              onChange={(e) => handleInputChange('travelers', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                <option key={num} value={num}>
+                  {num} {num === 1 ? 'Traveler' : 'Travelers'}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-  const handleNextStep = () => {
-    if (step < 3) {
-      setStep(step + 1);
-    } else {
-      handleSubmit();
-    }
-  };
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Travel Style
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {travelStyles.map((style) => (
+              <button
+                key={style.id}
+                type="button"
+                onClick={() => handleInputChange('travelStyle', style.id)}
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  travelDetails.travelStyle === style.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{style.icon}</span>
+                  <div>
+                    <h4 className="font-medium text-gray-900">{style.label}</h4>
+                    <p className="text-xs text-gray-600">{style.description}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
-  const handlePrevStep = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    }
-  };
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Budget Breakdown (USD)
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                <Plane className="w-3 h-3 inline mr-1" />
+                Flight
+              </label>
+              <input
+                type="number"
+                value={travelDetails.budgets.flight}
+                onChange={(e) => handleInputChange('budgets.flight', e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                <Building className="w-3 h-3 inline mr-1" />
+                Hotel
+              </label>
+              <input
+                type="number"
+                value={travelDetails.budgets.hotel}
+                onChange={(e) => handleInputChange('budgets.hotel', e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Food
+              </label>
+              <input
+                type="number"
+                value={travelDetails.budgets.food}
+                onChange={(e) => handleInputChange('budgets.food', e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                <Camera className="w-3 h-3 inline mr-1" />
+                Activities
+              </label>
+              <input
+                type="number"
+                value={travelDetails.budgets.activities}
+                onChange={(e) => handleInputChange('budgets.activities', e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Souvenirs
+              </label>
+              <input
+                type="number"
+                value={travelDetails.budgets.souvenirs}
+                onChange={(e) => handleInputChange('budgets.souvenirs', e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
 
-  const handleSubmit = () => {
-    setIsSubmitting(true);
-    
-    // In a real app, this would send the data to an API
-    console.log({
-      destination,
-      startDate,
-      endDate,
-      travelStyle,
-      interests
-    });
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsSubmitting(false);
-      // Navigate to the matching page
-      window.location.href = '/travel-buddy-matching';
-    }, 1500);
-  };
+        <button
+          type="submit"
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2"
+        >
+          <Sparkles className="w-5 h-5" />
+          <span>Generate My Perfect Trip</span>
+        </button>
+      </form>
+    </motion.div>
+  );
 
-  const isStepValid = () => {
-    switch (step) {
-      case 1:
-        return destination.trim() !== '';
-      case 2:
-        return startDate !== '' && endDate !== '';
-      case 3:
-        return travelStyle.length > 0 && interests.length > 0;
-      default:
-        return false;
-    }
-  };
+  const renderResults = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto"
+    >
+      <div className="flex items-center mb-8">
+        <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full flex items-center justify-center mr-4">
+          <Sparkles className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Your Trip to {travelDetails.destination}</h2>
+          <p className="text-gray-600">{travelDetails.dateRange} • {travelDetails.travelers} {parseInt(travelDetails.travelers) === 1 ? 'Traveler' : 'Travelers'}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 hover:shadow-md transition-shadow">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+            <Plane className="w-6 h-6 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Detailed Itinerary</h3>
+          <p className="text-gray-600 mb-4">Day-by-day plan with activities, restaurants, and attractions</p>
+          <button
+            onClick={() => setStep('itinerary')}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            View Itinerary
+          </button>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 hover:shadow-md transition-shadow">
+          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+            <Globe className="w-6 h-6 text-purple-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Visa Information</h3>
+          <p className="text-gray-600 mb-4">Requirements, documents, and application process</p>
+          <button
+            onClick={() => setStep('visa')}
+            className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Check Requirements
+          </button>
+        </div>
+
+        <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-6 hover:shadow-md transition-shadow">
+          <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-4">
+            <Users className="w-6 h-6 text-pink-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Travel Buddies</h3>
+          <p className="text-gray-600 mb-4">Find compatible travelers for your trip (optional)</p>
+          <button
+            onClick={() => setShowBuddies(true)}
+            className="w-full bg-pink-600 text-white py-2 rounded-lg hover:bg-pink-700 transition-colors"
+          >
+            Find Buddies
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 rounded-xl p-6 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Trip Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-start space-x-3 mb-3">
+              <MapPin className="w-5 h-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">From</p>
+                <p className="font-medium text-gray-900">{travelDetails.startingLocation}</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 mb-3">
+              <MapPin className="w-5 h-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">To</p>
+                <p className="font-medium text-gray-900">{travelDetails.destination}</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <Calendar className="w-5 h-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Dates</p>
+                <p className="font-medium text-gray-900">{travelDetails.dateRange}</p>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="flex items-start space-x-3 mb-3">
+              <Users className="w-5 h-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Travelers</p>
+                <p className="font-medium text-gray-900">{travelDetails.travelers} {parseInt(travelDetails.travelers) === 1 ? 'Person' : 'People'}</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 mb-3">
+              <Star className="w-5 h-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Travel Style</p>
+                <p className="font-medium text-gray-900">
+                  {travelStyles.find(style => style.id === travelDetails.travelStyle)?.label || 'Adventure Seeker'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <Clock className="w-5 h-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Generated</p>
+                <p className="font-medium text-gray-900">{new Date().toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex space-x-4">
+        <button
+          onClick={handleBack}
+          className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          Back to Planning
+        </button>
+        <button
+          onClick={() => {}}
+          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2"
+        >
+          <Send className="w-5 h-5" />
+          <span>Save Trip</span>
+        </button>
+      </div>
+
+      {/* Travel Buddies Modal */}
+      {showBuddies && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Find Travel Buddies</h3>
+              <button
+                onClick={() => setShowBuddies(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              Connect with like-minded travelers who are visiting {travelDetails.destination} around the same time. 
+              Finding travel buddies is optional and can enhance your travel experience.
+            </p>
+            
+            <div className="mb-6">
+              <CollabMatching />
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowBuddies(false)}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-          <Sparkles className="w-8 h-8 text-blue-600" />
+    <div className="max-w-6xl mx-auto px-4 py-12">
+      {step === 'input' && renderInputForm()}
+      {step === 'results' && renderResults()}
+      {step === 'itinerary' && (
+        <div className="max-w-6xl mx-auto">
+          <button
+            onClick={handleBack}
+            className="mb-6 inline-flex items-center text-blue-600 hover:text-blue-700"
+          >
+            ← Back to results
+          </button>
+          <ItineraryPlanner
+            destination={travelDetails.destination}
+            startDate={new Date()}
+            endDate={new Date(new Date().setDate(new Date().getDate() + 7))}
+            budget={Object.values(travelDetails.budgets).reduce((sum, val) => sum + parseInt(val || '0'), 0)}
+            activityTypes={[travelDetails.travelStyle]}
+            travelers={parseInt(travelDetails.travelers)}
+          />
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Find Your Perfect Travel Buddy
-        </h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Connect with like-minded travelers who share your destination, dates, and travel style.
-          Explore together and make lasting memories!
-        </p>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-        {/* Progress Steps */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 text-white">
-          <div className="flex justify-between items-center">
-            <div className="flex space-x-4">
-              {[1, 2, 3].map((stepNumber) => (
-                <div 
-                  key={stepNumber}
-                  className={`flex items-center ${stepNumber < step ? 'text-white' : stepNumber === step ? 'text-white' : 'text-white/50'}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 ${
-                    stepNumber < step 
-                      ? 'bg-white text-blue-600' 
-                      : stepNumber === step 
-                      ? 'bg-white/20 border-2 border-white' 
-                      : 'bg-white/10'
-                  }`}>
-                    {stepNumber < step ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      stepNumber
-                    )}
-                  </div>
-                  <span className="hidden sm:inline font-medium">
-                    {stepNumber === 1 ? 'Destination' : 
-                     stepNumber === 2 ? 'Dates' : 
-                     'Preferences'}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="text-sm font-medium">
-              Step {step} of 3
-            </div>
-          </div>
+      )}
+      {step === 'visa' && (
+        <div className="max-w-6xl mx-auto">
+          <button
+            onClick={handleBack}
+            className="mb-6 inline-flex items-center text-blue-600 hover:text-blue-700"
+          >
+            ← Back to results
+          </button>
+          <VisaInformation
+            fromCountry={travelDetails.startingLocation}
+            toCountry={travelDetails.destination}
+            travelDate={new Date()}
+            tripDuration={7}
+            travelPurpose="tourism"
+          />
         </div>
-
-        {/* Form Content */}
-        <div className="p-8">
-          {/* Step 1: Destination */}
-          {step === 1 && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Where are you traveling to?</h2>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-1" />
-                  Destination
-                </label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="e.g., Tokyo, Japan"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <p className="mt-2 text-sm text-gray-500">
-                  Enter the city or country you're planning to visit
-                </p>
-              </div>
-
-              <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
-                <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
-                  <Compass className="w-5 h-5 mr-2" />
-                  Popular Destinations
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {['Tokyo, Japan', 'Paris, France', 'Bali, Indonesia', 'New York, USA', 'Barcelona, Spain', 'Bangkok, Thailand'].map((place) => (
-                    <button
-                      key={place}
-                      onClick={() => setDestination(place)}
-                      className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-                        destination === place
-                          ? 'bg-blue-200 text-blue-800'
-                          : 'bg-white hover:bg-blue-100 text-gray-700 hover:text-blue-800'
-                      }`}
-                    >
-                      {place}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 2: Travel Dates */}
-          {step === 2 && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">When are you traveling?</h2>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="w-4 h-4 inline mr-1" />
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="w-4 h-4 inline mr-1" />
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="bg-purple-50 rounded-lg p-6 border border-purple-100">
-                <h3 className="font-semibold text-purple-900 mb-3">Travel Buddy Tip</h3>
-                <p className="text-sm text-purple-800">
-                  Setting flexible dates increases your chances of finding compatible travel buddies. 
-                  Consider adding a few days of buffer before and after your ideal travel period.
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 3: Travel Style & Interests */}
-          {step === 3 && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">What's your travel style?</h2>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Travel Style (select all that apply)
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {travelStyles.map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => handleTravelStyleToggle(style.id)}
-                      className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-                        travelStyle.includes(style.id)
-                          ? 'bg-blue-100 text-blue-800 border-2 border-blue-300'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
-                      }`}
-                    >
-                      {style.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Interests (select all that apply)
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {interestOptions.map((interest) => (
-                    <button
-                      key={interest.id}
-                      onClick={() => handleInterestToggle(interest.id)}
-                      className={`p-3 rounded-lg text-sm font-medium transition-colors ${
-                        interests.includes(interest.id)
-                          ? 'bg-green-100 text-green-800 border-2 border-green-300'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
-                      }`}
-                    >
-                      {interest.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-pink-50 rounded-lg p-6 border border-pink-100">
-                <h3 className="font-semibold text-pink-900 mb-3 flex items-center">
-                  <Heart className="w-5 h-5 mr-2" />
-                  How Matching Works
-                </h3>
-                <p className="text-sm text-pink-800">
-                  We'll match you with travelers who share your destination, have overlapping travel dates, 
-                  and compatible travel styles. The more information you provide, the better matches we can find!
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            <button
-              onClick={handlePrevStep}
-              className={`px-6 py-3 text-gray-600 font-medium ${step === 1 ? 'invisible' : ''}`}
-            >
-              Back
-            </button>
-            
-            <button
-              onClick={handleNextStep}
-              disabled={!isStepValid() || isSubmitting}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Finding Matches...</span>
-                </>
-              ) : (
-                <>
-                  <span>{step === 3 ? 'Find Matches' : 'Next'}</span>
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Additional Info */}
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <Flag className="w-6 h-6 text-blue-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Shared Experiences</h3>
-          <p className="text-gray-600 text-sm">
-            Travel with someone who shares your interests and can enhance your journey with their unique perspective.
-          </p>
-        </div>
-        
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-            <Users className="w-6 h-6 text-purple-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Safety in Numbers</h3>
-          <p className="text-gray-600 text-sm">
-            Traveling with a buddy can be safer, especially in unfamiliar destinations. Share costs and watch out for each other.
-          </p>
-        </div>
-        
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-4">
-            <MessageCircle className="w-6 h-6 text-pink-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Make New Friends</h3>
-          <p className="text-gray-600 text-sm">
-            Form meaningful connections with travelers from around the world who share your passion for exploration.
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
-
-// Additional components for the page
-const Check: React.FC<{ className?: string }> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <polyline points="20 6 9 17 4 12"></polyline>
-  </svg>
-);
 
 export default TravelBuddyAssistant;
