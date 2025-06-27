@@ -20,7 +20,8 @@ import {
   Globe,
   Clock,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Utensils
 } from 'lucide-react';
 import ItineraryPlanner from './ItineraryPlanner';
 import VisaInformation from './VisaInformation';
