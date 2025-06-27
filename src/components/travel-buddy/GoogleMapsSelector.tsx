@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
-import { MapPin, Star, Clock, DollarSign, Plus, Check, Loader } from 'lucide-react';
+import { MapPin, Star, Clock, DollarSign, Plus, Check, Loader, X, AlertCircle } from 'lucide-react';
 
 interface Attraction {
   id: string;
@@ -36,14 +36,18 @@ const GoogleMapsSelector: React.FC<GoogleMapsSelectorProps> = ({
   const [selectedAttraction, setSelectedAttraction] = useState<Attraction | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { isLoaded } = useJsApiLoader({
+  // Get API key from environment variables
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const hasValidApiKey = apiKey && apiKey !== 'YOUR_API_KEY' && apiKey.trim() !== '';
+
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: 'YOUR_API_KEY' // In a real app, this would be an environment variable
+    googleMapsApiKey: hasValidApiKey ? apiKey : 'demo-key' // Use demo key to prevent loading if no valid key
   });
 
   // Geocode the destination to get coordinates
   useEffect(() => {
-    if (isLoaded && destination) {
+    if (destination) {
       setIsLoading(true);
       
       // In a real app, this would use the Google Maps Geocoding API
@@ -76,7 +80,7 @@ const GoogleMapsSelector: React.FC<GoogleMapsSelectorProps> = ({
         setIsLoading(false);
       }, 1000);
     }
-  }, [isLoaded, destination, selectedAttractions]);
+  }, [destination, selectedAttractions]);
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -280,6 +284,91 @@ const GoogleMapsSelector: React.FC<GoogleMapsSelectorProps> = ({
     
     return 'Attraction';
   };
+
+  // Show error message if no valid API key is provided
+  if (!hasValidApiKey) {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Explore {destination}</h3>
+          <p className="text-gray-600">Select attractions and activities to add to your itinerary</p>
+        </div>
+        
+        <div className="p-8 text-center">
+          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-amber-600" />
+          </div>
+          <h4 className="text-lg font-semibold text-gray-900 mb-2">Google Maps API Key Required</h4>
+          <p className="text-gray-600 mb-4">
+            To use the interactive map feature, please add your Google Maps API key to the environment variables.
+          </p>
+          <div className="bg-gray-50 rounded-lg p-4 text-left">
+            <p className="text-sm text-gray-700 mb-2">
+              <strong>Steps to add API key:</strong>
+            </p>
+            <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+              <li>Get a Google Maps JavaScript API key from the Google Cloud Console</li>
+              <li>Add <code className="bg-gray-200 px-1 rounded">VITE_GOOGLE_MAPS_API_KEY=your_api_key_here</code> to your .env file</li>
+              <li>Restart the development server</li>
+            </ol>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          <h4 className="font-semibold text-gray-900 mb-3">Selected Attractions ({selectedAttractions.length})</h4>
+          
+          {selectedAttractions.length === 0 ? (
+            <div className="text-center py-6 bg-gray-50 rounded-lg">
+              <MapPin className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600">No attractions selected yet</p>
+              <p className="text-sm text-gray-500">Map functionality requires Google Maps API key</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {selectedAttractions.map(attraction => (
+                <div key={attraction.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <MapPin className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h5 className="font-medium text-gray-900">{attraction.name}</h5>
+                      <div className="flex items-center space-x-2 text-xs text-gray-600">
+                        <div className="flex items-center">
+                          <Star className="w-3 h-3 text-yellow-500 mr-1" />
+                          <span>{attraction.rating.toFixed(1)}</span>
+                        </div>
+                        <span>•</span>
+                        <span>{getAttractionTypeLabel(attraction.types)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAttraction(attraction)}
+                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <AlertCircle className="w-8 h-8 text-red-600" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Maps</h3>
+        <p className="text-gray-600">There was an error loading Google Maps. Please check your API key and try again.</p>
+      </div>
+    );
+  }
 
   if (!isLoaded) {
     return (
