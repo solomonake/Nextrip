@@ -18,18 +18,24 @@ import {
   Check,
   Star,
   Globe,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import ItineraryPlanner from './ItineraryPlanner';
 import VisaInformation from './VisaInformation';
 import CollabMatching from '../community/CollabMatching';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import ItineraryGenerator from '../ItineraryGenerator';
 
 const TravelBuddyAssistant: React.FC = () => {
-  const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'buddies'>('input');
+  const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'buddies' | 'itineraryOptions'>('input');
   const [travelDetails, setTravelDetails] = useState({
     startingLocation: '',
     destination: '',
-    dateRange: '',
+    startDate: null as Date | null,
+    endDate: null as Date | null,
     travelers: '1',
     travelStyle: 'adventure',
     budgets: {
@@ -41,15 +47,16 @@ const TravelBuddyAssistant: React.FC = () => {
     }
   });
   const [showBuddies, setShowBuddies] = useState(false);
+  const [selectedItinerary, setSelectedItinerary] = useState<number | null>(null);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | Date | null) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setTravelDetails(prev => ({
         ...prev,
         [parent]: {
           ...prev[parent as keyof typeof prev] as Record<string, string>,
-          [child]: value.replace(/^0+/, '') // Remove leading zeros
+          [child]: typeof value === 'string' ? value.replace(/^0+/, '') : value // Remove leading zeros for strings
         }
       }));
     } else {
@@ -62,15 +69,22 @@ const TravelBuddyAssistant: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('results');
+    setStep('itineraryOptions');
   };
 
   const handleBack = () => {
-    if (step === 'results') {
+    if (step === 'itineraryOptions') {
       setStep('input');
+    } else if (step === 'results') {
+      setStep('itineraryOptions');
     } else if (step === 'itinerary' || step === 'visa' || step === 'buddies') {
       setStep('results');
     }
+  };
+
+  const handleSelectItinerary = (index: number) => {
+    setSelectedItinerary(index);
+    setStep('results');
   };
 
   const travelStyles = [
@@ -134,34 +148,61 @@ const TravelBuddyAssistant: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Calendar className="w-4 h-4 inline mr-1" />
-              Date Range
+              Start Date
             </label>
-            <input
-              type="text"
-              value={travelDetails.dateRange}
-              onChange={(e) => handleInputChange('dateRange', e.target.value)}
-              placeholder="e.g., June 15-25, 2024"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
+            <div className="relative">
+              <DatePicker
+                selected={travelDetails.startDate}
+                onChange={(date) => handleInputChange('startDate', date)}
+                selectsStart
+                startDate={travelDetails.startDate}
+                endDate={travelDetails.endDate}
+                minDate={new Date()}
+                placeholderText="Select start date"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Users className="w-4 h-4 inline mr-1" />
-              Number of Travelers
+              <Calendar className="w-4 h-4 inline mr-1" />
+              End Date
             </label>
-            <select
-              value={travelDetails.travelers}
-              onChange={(e) => handleInputChange('travelers', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                <option key={num} value={num}>
-                  {num} {num === 1 ? 'Traveler' : 'Travelers'}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <DatePicker
+                selected={travelDetails.endDate}
+                onChange={(date) => handleInputChange('endDate', date)}
+                selectsEnd
+                startDate={travelDetails.startDate}
+                endDate={travelDetails.endDate}
+                minDate={travelDetails.startDate}
+                placeholderText="Select end date"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+            </div>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <Users className="w-4 h-4 inline mr-1" />
+            Number of Travelers
+          </label>
+          <select
+            value={travelDetails.travelers}
+            onChange={(e) => handleInputChange('travelers', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+              <option key={num} value={num}>
+                {num} {num === 1 ? 'Traveler' : 'Travelers'}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
@@ -274,6 +315,269 @@ const TravelBuddyAssistant: React.FC = () => {
     </motion.div>
   );
 
+  const renderItineraryOptions = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-6xl mx-auto"
+    >
+      <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">Choose Your Ideal Itinerary</h2>
+      <p className="text-xl text-gray-600 text-center mb-12 max-w-3xl mx-auto">
+        We've created three personalized itineraries for your trip to {travelDetails.destination}. 
+        Each offers a different experience based on your preferences.
+      </p>
+
+      <div className="grid lg:grid-cols-3 gap-8 mb-12">
+        {/* Budget Explorer Itinerary */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6">
+            <h3 className="text-2xl font-bold mb-2">Budget Explorer</h3>
+            <p className="text-sm opacity-90">Smart savings without compromising on experiences</p>
+            <div className="mt-4 flex items-center justify-between">
+              <div>
+                <span className="text-3xl font-bold">$1,850</span>
+                <span className="text-sm opacity-75 ml-2">total</span>
+              </div>
+              <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium">Save $450</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div>
+              <div className="flex items-center mb-3">
+                <Plane className="w-5 h-5 text-blue-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Economy Flights</h4>
+              </div>
+              <p className="text-sm text-gray-600">Affordable flights with one stop, optimized for value</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Building className="w-5 h-5 text-purple-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Comfortable Hostels & Guesthouses</h4>
+              </div>
+              <p className="text-sm text-gray-600">Clean, well-rated budget accommodations in good locations</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Utensils className="w-5 h-5 text-orange-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Local Eateries & Street Food</h4>
+              </div>
+              <p className="text-sm text-gray-600">Authentic local cuisine at affordable prices</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Camera className="w-5 h-5 text-green-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Free & Low-Cost Activities</h4>
+              </div>
+              <p className="text-sm text-gray-600">Focus on free attractions with select paid experiences</p>
+            </div>
+          </div>
+
+          <div className="p-6 bg-gray-50 border-t">
+            <button 
+              onClick={() => handleSelectItinerary(0)}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors"
+            >
+              Choose This Itinerary
+            </button>
+          </div>
+        </div>
+
+        {/* Balanced Itinerary */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform scale-105 z-10">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 relative">
+            <div className="absolute top-0 right-0 bg-yellow-400 text-blue-900 px-4 py-1 font-bold text-sm transform translate-y-2 rotate-45 origin-bottom-right">
+              POPULAR
+            </div>
+            <h3 className="text-2xl font-bold mb-2">Perfect Balance</h3>
+            <p className="text-sm opacity-90">The ideal mix of comfort, culture, and adventure</p>
+            <div className="mt-4 flex items-center justify-between">
+              <div>
+                <span className="text-3xl font-bold">$2,300</span>
+                <span className="text-sm opacity-75 ml-2">total</span>
+              </div>
+              <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium">Best Value</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div>
+              <div className="flex items-center mb-3">
+                <Plane className="w-5 h-5 text-blue-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Direct Flights</h4>
+              </div>
+              <p className="text-sm text-gray-600">Convenient flight times with minimal layovers</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Building className="w-5 h-5 text-purple-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Mid-Range Hotels</h4>
+              </div>
+              <p className="text-sm text-gray-600">3-4 star hotels with good amenities in central locations</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Utensils className="w-5 h-5 text-orange-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Mix of Dining Experiences</h4>
+              </div>
+              <p className="text-sm text-gray-600">Local favorites plus some special dining experiences</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Camera className="w-5 h-5 text-green-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Curated Activities</h4>
+              </div>
+              <p className="text-sm text-gray-600">Must-see attractions plus some unique experiences</p>
+            </div>
+          </div>
+
+          <div className="p-6 bg-gray-50 border-t">
+            <button 
+              onClick={() => handleSelectItinerary(1)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
+            >
+              Choose This Itinerary
+            </button>
+          </div>
+        </div>
+
+        {/* Luxury Itinerary */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
+            <h3 className="text-2xl font-bold mb-2">Premium Experience</h3>
+            <p className="text-sm opacity-90">Luxury accommodations and exclusive experiences</p>
+            <div className="mt-4 flex items-center justify-between">
+              <div>
+                <span className="text-3xl font-bold">$3,500</span>
+                <span className="text-sm opacity-75 ml-2">total</span>
+              </div>
+              <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium">Top Tier</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div>
+              <div className="flex items-center mb-3">
+                <Plane className="w-5 h-5 text-blue-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Business Class Flights</h4>
+              </div>
+              <p className="text-sm text-gray-600">Premium comfort with direct routes and flexible options</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Building className="w-5 h-5 text-purple-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Luxury Hotels & Resorts</h4>
+              </div>
+              <p className="text-sm text-gray-600">4-5 star accommodations with premium amenities</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Utensils className="w-5 h-5 text-orange-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">Fine Dining Experiences</h4>
+              </div>
+              <p className="text-sm text-gray-600">Michelin-starred restaurants and exclusive dining</p>
+            </div>
+
+            <div>
+              <div className="flex items-center mb-3">
+                <Camera className="w-5 h-5 text-green-600 mr-2" />
+                <h4 className="font-semibold text-gray-900">VIP Experiences & Private Tours</h4>
+              </div>
+              <p className="text-sm text-gray-600">Skip-the-line access and personalized experiences</p>
+            </div>
+          </div>
+
+          <div className="p-6 bg-gray-50 border-t">
+            <button 
+              onClick={() => handleSelectItinerary(2)}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition-colors"
+            >
+              Choose This Itinerary
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Comparison Table */}
+      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+        <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Itinerary Comparison</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-3 px-4">Feature</th>
+                <th className="text-center py-3 px-4">Budget Explorer</th>
+                <th className="text-center py-3 px-4">Perfect Balance</th>
+                <th className="text-center py-3 px-4">Premium Experience</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b">
+                <td className="py-3 px-4 font-medium">Price</td>
+                <td className="text-center py-3 px-4 text-green-600 font-medium">$1,850</td>
+                <td className="text-center py-3 px-4 text-blue-600 font-medium">$2,300</td>
+                <td className="text-center py-3 px-4 text-purple-600 font-medium">$3,500</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-3 px-4 font-medium">Accommodation</td>
+                <td className="text-center py-3 px-4">Hostels & Guesthouses</td>
+                <td className="text-center py-3 px-4">3-4 Star Hotels</td>
+                <td className="text-center py-3 px-4">4-5 Star Luxury Hotels</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-3 px-4 font-medium">Transportation</td>
+                <td className="text-center py-3 px-4">Public Transit & Walking</td>
+                <td className="text-center py-3 px-4">Mix of Transit & Taxis</td>
+                <td className="text-center py-3 px-4">Private Transfers</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-3 px-4 font-medium">Dining</td>
+                <td className="text-center py-3 px-4">Street Food & Local Eateries</td>
+                <td className="text-center py-3 px-4">Mix of Local & Upscale</td>
+                <td className="text-center py-3 px-4">Fine Dining & Exclusive</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-3 px-4 font-medium">Activities</td>
+                <td className="text-center py-3 px-4">Free & Budget-Friendly</td>
+                <td className="text-center py-3 px-4">Mix of Essential & Special</td>
+                <td className="text-center py-3 px-4">VIP Access & Private Tours</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-medium">Best For</td>
+                <td className="text-center py-3 px-4">Budget-conscious travelers</td>
+                <td className="text-center py-3 px-4">Most travelers</td>
+                <td className="text-center py-3 px-4">Luxury experience seekers</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="text-center">
+        <button
+          onClick={handleBack}
+          className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          Back to Planning
+        </button>
+      </div>
+    </motion.div>
+  );
+
   const renderResults = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -286,7 +590,11 @@ const TravelBuddyAssistant: React.FC = () => {
         </div>
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Your Trip to {travelDetails.destination}</h2>
-          <p className="text-gray-600">{travelDetails.dateRange} • {travelDetails.travelers} {parseInt(travelDetails.travelers) === 1 ? 'Traveler' : 'Travelers'}</p>
+          <p className="text-gray-600">
+            {travelDetails.startDate && travelDetails.endDate ? 
+              `${travelDetails.startDate.toLocaleDateString()} - ${travelDetails.endDate.toLocaleDateString()}` : 
+              "Date range not specified"} • {travelDetails.travelers} {parseInt(travelDetails.travelers) === 1 ? 'Traveler' : 'Travelers'}
+          </p>
         </div>
       </div>
 
@@ -356,7 +664,11 @@ const TravelBuddyAssistant: React.FC = () => {
               <Calendar className="w-5 h-5 text-gray-500 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">Dates</p>
-                <p className="font-medium text-gray-900">{travelDetails.dateRange}</p>
+                <p className="font-medium text-gray-900">
+                  {travelDetails.startDate && travelDetails.endDate ? 
+                    `${travelDetails.startDate.toLocaleDateString()} - ${travelDetails.endDate.toLocaleDateString()}` : 
+                    "Date range not specified"}
+                </p>
               </div>
             </div>
           </div>
@@ -393,7 +705,7 @@ const TravelBuddyAssistant: React.FC = () => {
           onClick={handleBack}
           className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          Back to Planning
+          Back to Options
         </button>
         <button
           onClick={() => {}}
@@ -441,9 +753,17 @@ const TravelBuddyAssistant: React.FC = () => {
     </motion.div>
   );
 
+  const formatDateRange = () => {
+    if (!travelDetails.startDate || !travelDetails.endDate) return "";
+    
+    const options = { year: 'numeric', month: 'short', day: 'numeric' } as const;
+    return `${travelDetails.startDate.toLocaleDateString('en-US', options)} - ${travelDetails.endDate.toLocaleDateString('en-US', options)}`;
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
       {step === 'input' && renderInputForm()}
+      {step === 'itineraryOptions' && renderItineraryOptions()}
       {step === 'results' && renderResults()}
       {step === 'itinerary' && (
         <div className="max-w-6xl mx-auto">
@@ -455,8 +775,8 @@ const TravelBuddyAssistant: React.FC = () => {
           </button>
           <ItineraryPlanner
             destination={travelDetails.destination}
-            startDate={new Date()}
-            endDate={new Date(new Date().setDate(new Date().getDate() + 7))}
+            startDate={travelDetails.startDate || new Date()}
+            endDate={travelDetails.endDate || new Date(new Date().setDate(new Date().getDate() + 7))}
             budget={Object.values(travelDetails.budgets).reduce((sum, val) => sum + parseInt(val || '0'), 0)}
             activityTypes={[travelDetails.travelStyle]}
             travelers={parseInt(travelDetails.travelers)}
@@ -474,8 +794,9 @@ const TravelBuddyAssistant: React.FC = () => {
           <VisaInformation
             fromCountry={travelDetails.startingLocation}
             toCountry={travelDetails.destination}
-            travelDate={new Date()}
-            tripDuration={7}
+            travelDate={travelDetails.startDate || new Date()}
+            tripDuration={travelDetails.startDate && travelDetails.endDate ? 
+              Math.ceil((travelDetails.endDate.getTime() - travelDetails.startDate.getTime()) / (1000 * 60 * 60 * 24)) : 7}
             travelPurpose="tourism"
           />
         </div>
