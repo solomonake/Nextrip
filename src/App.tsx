@@ -11,6 +11,7 @@ import ProfilePage from './pages/ProfilePage';
 import TravelBuddyPage from './pages/TravelBuddyPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { TripProvider } from './contexts/TripContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import MyTripsPage from './pages/MyTripsPage';
 import CommunityPage from './pages/CommunityPage';
@@ -62,9 +63,11 @@ function App() {
   return (
     <AuthProvider>
       <TripProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <ToastProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </ToastProvider>
       </TripProvider>
     </AuthProvider>
   );

@@ -29,6 +29,9 @@ import CollabMatching from '../community/CollabMatching';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import ItineraryGenerator from '../ItineraryGenerator';
+import { useTrip } from '../../contexts/TripContext';
+import { useToast } from '../../contexts/ToastContext';
+import { useNavigate } from 'react-router-dom';
 
 const TravelBuddyAssistant: React.FC = () => {
   const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'buddies' | 'itineraryOptions'>('input');
@@ -49,6 +52,9 @@ const TravelBuddyAssistant: React.FC = () => {
   });
   const [showBuddies, setShowBuddies] = useState(false);
   const [selectedItinerary, setSelectedItinerary] = useState<number | null>(null);
+  const { addTrip } = useTrip();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
 
   const handleInputChange = (field: string, value: string | Date | null) => {
     if (field.includes('.')) {
@@ -86,6 +92,50 @@ const TravelBuddyAssistant: React.FC = () => {
   const handleSelectItinerary = (index: number) => {
     setSelectedItinerary(index);
     setStep('results');
+  };
+
+  const handleSaveTrip = () => {
+    if (!travelDetails.startDate || !travelDetails.endDate) {
+      showToast('Please select valid travel dates', 'error');
+      return;
+    }
+
+    // Calculate total budget
+    const totalBudget = Object.values(travelDetails.budgets).reduce(
+      (sum, val) => sum + parseInt(val || '0'), 0
+    );
+
+    // Create a new trip object
+    const newTrip = {
+      id: Date.now().toString(),
+      title: `Trip to ${travelDetails.destination}`,
+      destination: travelDetails.destination,
+      startDate: travelDetails.startDate,
+      endDate: travelDetails.endDate,
+      travelers: parseInt(travelDetails.travelers),
+      budget: {
+        total: totalBudget,
+        spent: 0,
+        categories: {
+          flights: parseInt(travelDetails.budgets.flight) || 0,
+          hotels: parseInt(travelDetails.budgets.hotel) || 0,
+          food: parseInt(travelDetails.budgets.food) || 0,
+          activities: parseInt(travelDetails.budgets.activities) || 0,
+          transport: parseInt(travelDetails.budgets.souvenirs) || 0
+        }
+      },
+      itinerary: [],
+      bookings: []
+    };
+
+    // Add the trip to the context
+    addTrip(newTrip);
+    
+    // Show success toast
+    showToast('Trip saved successfully!', 'success');
+    
+    // Navigate to the trips page
+    navigate('/my-trips');
   };
 
   const travelStyles = [
@@ -709,7 +759,7 @@ const TravelBuddyAssistant: React.FC = () => {
           Back to Options
         </button>
         <button
-          onClick={() => {}}
+          onClick={handleSaveTrip}
           className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2"
         >
           <Send className="w-5 h-5" />
