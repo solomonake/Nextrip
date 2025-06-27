@@ -22,7 +22,8 @@ import {
   Mountain,
   Umbrella,
   Book,
-  Smile
+  Smile,
+  Building
 } from 'lucide-react';
 
 interface TravelBuddy {
