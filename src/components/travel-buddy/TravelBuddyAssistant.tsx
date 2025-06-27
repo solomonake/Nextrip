@@ -21,7 +21,8 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
-  Utensils
+  Utensils,
+  Map
 } from 'lucide-react';
 import ItineraryPlanner from './ItineraryPlanner';
 import VisaInformation from './VisaInformation';
@@ -32,9 +33,22 @@ import ItineraryGenerator from '../ItineraryGenerator';
 import { useTrip } from '../../contexts/TripContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
+import GoogleMapsSelector from './GoogleMapsSelector';
+
+interface Attraction {
+  id: string;
+  name: string;
+  location: { lat: number; lng: number };
+  rating: number;
+  price_level?: number;
+  types: string[];
+  vicinity: string;
+  photos?: { photo_reference: string }[];
+  selected?: boolean;
+}
 
 const TravelBuddyAssistant: React.FC = () => {
-  const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'buddies' | 'itineraryOptions'>('input');
+  const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'buddies' | 'itineraryOptions' | 'map'>('input');
   const [travelDetails, setTravelDetails] = useState({
     startingLocation: '',
     destination: '',
@@ -52,6 +66,7 @@ const TravelBuddyAssistant: React.FC = () => {
   });
   const [showBuddies, setShowBuddies] = useState(false);
   const [selectedItinerary, setSelectedItinerary] = useState<number | null>(null);
+  const [selectedAttractions, setSelectedAttractions] = useState<Attraction[]>([]);
   const { addTrip } = useTrip();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -84,7 +99,7 @@ const TravelBuddyAssistant: React.FC = () => {
       setStep('input');
     } else if (step === 'results') {
       setStep('itineraryOptions');
-    } else if (step === 'itinerary' || step === 'visa' || step === 'buddies') {
+    } else if (step === 'itinerary' || step === 'visa' || step === 'buddies' || step === 'map') {
       setStep('results');
     }
   };
@@ -92,6 +107,10 @@ const TravelBuddyAssistant: React.FC = () => {
   const handleSelectItinerary = (index: number) => {
     setSelectedItinerary(index);
     setStep('results');
+  };
+
+  const handleAttractionsSelected = (attractions: Attraction[]) => {
+    setSelectedAttractions(attractions);
   };
 
   const handleSaveTrip = () => {
@@ -649,7 +668,7 @@ const TravelBuddyAssistant: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 hover:shadow-md transition-shadow">
           <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
             <Plane className="w-6 h-6 text-blue-600" />
@@ -675,6 +694,20 @@ const TravelBuddyAssistant: React.FC = () => {
             className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
           >
             Check Requirements
+          </button>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 hover:shadow-md transition-shadow">
+          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <Map className="w-6 h-6 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Explore Map</h3>
+          <p className="text-gray-600 mb-4">Discover and select attractions for your itinerary</p>
+          <button
+            onClick={() => setStep('map')}
+            className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Open Map
           </button>
         </div>
 
@@ -750,6 +783,37 @@ const TravelBuddyAssistant: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {selectedAttractions.length > 0 && (
+        <div className="bg-green-50 rounded-xl p-6 mb-8 border border-green-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <MapPin className="w-5 h-5 text-green-600 mr-2" />
+            Selected Attractions ({selectedAttractions.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {selectedAttractions.map(attraction => (
+              <div key={attraction.id} className="flex items-center p-3 bg-white rounded-lg border border-green-100">
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">{attraction.name}</h4>
+                  <div className="flex items-center text-xs text-gray-600">
+                    <Star className="w-3 h-3 text-yellow-500 mr-1" />
+                    <span>{attraction.rating.toFixed(1)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const updated = selectedAttractions.filter(a => a.id !== attraction.id);
+                    setSelectedAttractions(updated);
+                  }}
+                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex space-x-4">
         <button
@@ -849,6 +913,21 @@ const TravelBuddyAssistant: React.FC = () => {
             tripDuration={travelDetails.startDate && travelDetails.endDate ? 
               Math.ceil((travelDetails.endDate.getTime() - travelDetails.startDate.getTime()) / (1000 * 60 * 60 * 24)) : 7}
             travelPurpose="tourism"
+          />
+        </div>
+      )}
+      {step === 'map' && (
+        <div className="max-w-6xl mx-auto">
+          <button
+            onClick={handleBack}
+            className="mb-6 inline-flex items-center text-blue-600 hover:text-blue-700"
+          >
+            ← Back to results
+          </button>
+          <GoogleMapsSelector 
+            destination={travelDetails.destination}
+            onAttractionsSelected={handleAttractionsSelected}
+            selectedAttractions={selectedAttractions}
           />
         </div>
       )}
