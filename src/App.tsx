@@ -6,6 +6,7 @@ import Footer from './components/layout/Footer';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import ItineraryPage from './pages/ItineraryPage';
+import ItineraryDetailPage from './pages/ItineraryDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import TravelBuddyPage from './pages/TravelBuddyPage';
 import VoiceAssistant from './components/advanced/VoiceAssistant';
@@ -46,6 +47,7 @@ function AppContent() {
           <Route path="/" element={<HomePage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/itinerary" element={<ItineraryPage />} />
+          <Route path="/itinerary/:tripId" element={<ItineraryDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/travel-buddy" element={<TravelBuddyPage />} />
         </Routes>
