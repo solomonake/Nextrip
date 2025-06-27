@@ -9,13 +9,13 @@ import ItineraryPage from './pages/ItineraryPage';
 import ItineraryDetailPage from './pages/ItineraryDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import TravelBuddyPage from './pages/TravelBuddyPage';
-import VoiceAssistant from './components/advanced/VoiceAssistant';
 import { AuthProvider } from './contexts/AuthContext';
 import { TripProvider } from './contexts/TripContext';
 import { useNavigate } from 'react-router-dom';
 import MyTripsPage from './pages/MyTripsPage';
 import CommunityPage from './pages/CommunityPage';
 import TravelResourcesPage from './pages/TravelResourcesPage';
+import TravelBuddyMatchingPage from './pages/TravelBuddyMatchingPage';
 
 
 function AppContent() {
@@ -43,6 +43,7 @@ function AppContent() {
           <Route path="/ai-buddy" element={<TravelBuddyPage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/resources" element={<TravelResourcesPage />} />
+          <Route path="/travel-buddy-matching" element={<TravelBuddyMatchingPage />} />
 
           <Route path="/" element={<HomePage />} />
           <Route path="/search" element={<SearchPage />} />
@@ -53,12 +54,6 @@ function AppContent() {
         </Routes>
       </motion.main>
       <Footer />
-      
-      {/* Voice Assistant */}
-      <VoiceAssistant 
-        onNavigate={handleVoiceNavigate}
-        onSearch={handleVoiceSearch}
-      />
     </div>
   );
 }
