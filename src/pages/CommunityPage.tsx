@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Bookmark, Users, Search, UserPlus, Settings, TrendingUp, Globe, Camera, Award, Trophy, Target } from 'lucide-react';
 import TravelMissions from '../components/community/TravelMissions';
+import { useAppState } from '../contexts/AppStateContext';
 
 export default function CommunityPage() {
-  const [activeTab, setActiveTab] = useState<'feed' | 'collab-matching' | 'collab-requests' | 'my-profile' | 'missions'>('feed');
+  const { appState, setCommunityActiveTab } = useAppState();
+  const activeTab = appState.communityActiveTab;
 
   const tabs = [
     { id: 'feed', label: 'Community Feed', icon: Heart },
@@ -95,21 +97,21 @@ export default function CommunityPage() {
             {/* Quick Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <button
-                onClick={() => setActiveTab('feed')}
+                onClick={() => setCommunityActiveTab('feed')}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg"
               >
                 <Heart className="w-5 h-5" />
                 <span>Explore Community</span>
               </button>
               <button
-                onClick={() => setActiveTab('missions')}
+                onClick={() => setCommunityActiveTab('missions')}
                 className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg"
               >
                 <Trophy className="w-5 h-5" />
                 <span>Travel Missions</span>
               </button>
               <button
-                onClick={() => setActiveTab('collab-matching')}
+                onClick={() => setCommunityActiveTab('collab-matching')}
                 className="bg-white border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg"
               >
                 <Search className="w-5 h-5" />
@@ -203,7 +205,7 @@ export default function CommunityPage() {
             </h3>
             <div className="space-y-3">
               <button 
-                onClick={() => setActiveTab('missions')}
+                onClick={() => setCommunityActiveTab('missions')}
                 className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 text-white py-3 rounded-lg font-medium hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 flex items-center justify-center space-x-2"
               >
                 <Trophy className="w-4 h-4" />
@@ -236,7 +238,7 @@ export default function CommunityPage() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setCommunityActiveTab(tab.id as any)}
                   className={`flex items-center space-x-2 px-6 py-4 rounded-xl font-medium transition-all duration-200 whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'

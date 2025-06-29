@@ -12,7 +12,7 @@ import TravelBuddyPage from './pages/TravelBuddyPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { TripProvider } from './contexts/TripContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { useNavigate } from 'react-router-dom';
+import { AppStateProvider } from './contexts/AppStateContext';
 import MyTripsPage from './pages/MyTripsPage';
 import CommunityPage from './pages/CommunityPage';
 import TravelResourcesPage from './pages/TravelResourcesPage';
@@ -20,16 +20,6 @@ import TravelBuddyMatchingPage from './pages/TravelBuddyMatchingPage';
 
 
 function AppContent() {
-  const navigate = useNavigate();
-
-  const handleVoiceNavigate = (path: string) => {
-    navigate(path);
-  };
-
-  const handleVoiceSearch = (query: string) => {
-    navigate(`/search?q=${encodeURIComponent(query)}`);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Header />
@@ -64,9 +54,11 @@ function App() {
     <AuthProvider>
       <TripProvider>
         <ToastProvider>
-          <Router>
-            <AppContent />
-          </Router>
+          <AppStateProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </AppStateProvider>
         </ToastProvider>
       </TripProvider>
     </AuthProvider>

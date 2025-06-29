@@ -29,6 +29,7 @@ import MapView from '../components/search/MapView';
 import ARExplorer from '../components/advanced/ARExplorer';
 import SustainabilityScore from '../components/advanced/SustainabilityScore';
 import AITravelRisk from '../components/advanced/AITravelRisk';
+import { useAppState } from '../contexts/AppStateContext';
 
 export interface SearchFilters {
   type: 'flights' | 'hotels' | 'cars' | 'activities';
@@ -45,6 +46,7 @@ export interface SearchFilters {
 const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { appState, updateSearchFilters } = useAppState();
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showAR, setShowAR] = useState(false);
@@ -52,39 +54,31 @@ const SearchPage: React.FC = () => {
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [filters, setFilters] = useState<SearchFilters>({
-    type: (searchParams.get('type') as any) || 'flights',
-    destination: searchParams.get('q') || '',
-    checkIn: '',
-    checkOut: '',
-    guests: 1,
-    priceRange: [0, 1000],
-    rating: 0,
-    amenities: [],
-    sortBy: 'popularity'
-  });
-
-  const [searchQuery, setSearchQuery] = useState(filters.destination);
+  const [searchQuery, setSearchQuery] = useState(appState.searchFilters.destination);
 
   useEffect(() => {
     if (searchParams.get('q')) {
       setSearchQuery(searchParams.get('q') || '');
-      setFilters(prev => ({ ...prev, destination: searchParams.get('q') || '' }));
+      updateSearchFilters({ destination: searchParams.get('q') || '' });
     }
-  }, [searchParams]);
+    
+    if (searchParams.get('type')) {
+      updateSearchFilters({ type: searchParams.get('type') as any });
+    }
+  }, [searchParams, updateSearchFilters]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setFilters(prev => ({ ...prev, destination: searchQuery }));
-    setSearchParams({ q: searchQuery, type: filters.type });
+    updateSearchFilters({ destination: searchQuery });
+    setSearchParams({ q: searchQuery, type: appState.searchFilters.type });
     
     // Simulate search delay
     setTimeout(() => setIsLoading(false), 1000);
   };
 
   const handleFilterChange = (newFilters: Partial<SearchFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+    updateSearchFilters(newFilters);
   };
 
   const searchTypes = [
@@ -108,7 +102,7 @@ const SearchPage: React.FC = () => {
                   key={type.id}
                   onClick={() => handleFilterChange({ type: type.id as any })}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    filters.type === type.id
+                    appState.searchFilters.type === type.id
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
@@ -128,19 +122,19 @@ const SearchPage: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search ${filters.type}...`}
+                placeholder={`Search ${appState.searchFilters.type}...`}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
-            {filters.type === 'hotels' && (
+            {appState.searchFilters.type === 'hotels' && (
               <>
                 <div className="flex space-x-2">
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="date"
-                      value={filters.checkIn}
+                      value={appState.searchFilters.checkIn}
                       onChange={(e) => handleFilterChange({ checkIn: e.target.value })}
                       className="pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -149,7 +143,7 @@ const SearchPage: React.FC = () => {
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="date"
-                      value={filters.checkOut}
+                      value={appState.searchFilters.checkOut}
                       onChange={(e) => handleFilterChange({ checkOut: e.target.value })}
                       className="pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -158,7 +152,7 @@ const SearchPage: React.FC = () => {
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <select
-                    value={filters.guests}
+                    value={appState.searchFilters.guests}
                     onChange={(e) => handleFilterChange({ guests: parseInt(e.target.value) })}
                     className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
                   >
@@ -246,22 +240,22 @@ const SearchPage: React.FC = () => {
               className="w-80 flex-shrink-0 space-y-6"
             >
               <SearchFilters 
-                filters={filters} 
+                filters={appState.searchFilters} 
                 onFilterChange={handleFilterChange}
               />
               
               {/* Advanced Features */}
               {showSustainability && (
                 <SustainabilityScore 
-                  type={filters.type === 'flights' ? 'flight' : filters.type === 'hotels' ? 'hotel' : 'activity'}
-                  itemName={`Sample ${filters.type.slice(0, -1)}`}
+                  type={appState.searchFilters.type === 'flights' ? 'flight' : appState.searchFilters.type === 'hotels' ? 'hotel' : 'activity'}
+                  itemName={`Sample ${appState.searchFilters.type.slice(0, -1)}`}
                 />
               )}
               
-              {showRiskAssessment && filters.destination && (
+              {showRiskAssessment && appState.searchFilters.destination && (
                 <AITravelRisk 
-                  destination={filters.destination}
-                  travelDate={new Date(filters.checkIn || Date.now())}
+                  destination={appState.searchFilters.destination}
+                  travelDate={new Date(appState.searchFilters.checkIn || Date.now())}
                 />
               )}
             </motion.div>
@@ -270,9 +264,9 @@ const SearchPage: React.FC = () => {
           {/* Results */}
           <div className="flex-1">
             {showMap ? (
-              <MapView filters={filters} />
+              <MapView filters={appState.searchFilters} />
             ) : (
-              <SearchResults filters={filters} isLoading={isLoading} />
+              <SearchResults filters={appState.searchFilters} isLoading={isLoading} />
             )}
           </div>
         </div>

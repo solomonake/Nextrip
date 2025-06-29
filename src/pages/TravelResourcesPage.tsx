@@ -27,9 +27,11 @@ import CurrencyCalculator from '../components/resources/CurrencyCalculator';
 import WeatherTracker from '../components/resources/WeatherTracker';
 import EmergencyContacts from '../components/resources/EmergencyContacts';
 import OfflineMaps from '../components/resources/OfflineMaps';
+import { useAppState } from '../contexts/AppStateContext';
 
 const TravelResourcesPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ar-translator' | 'currency' | 'weather' | 'emergency' | 'maps'>('ar-translator');
+  const { appState, setResourcesActiveTab } = useAppState();
+  const activeTab = appState.resourcesActiveTab;
 
   const tabs = [
     { 
@@ -145,7 +147,7 @@ const TravelResourcesPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setResourcesActiveTab(tab.id as any)}
                 className={`relative overflow-hidden rounded-2xl p-6 text-white transition-all duration-300 transform hover:scale-105 ${
                   activeTab === tab.id 
                     ? 'shadow-2xl ring-4 ring-white ring-opacity-50' 

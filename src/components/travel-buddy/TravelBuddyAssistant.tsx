@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Sparkles, 
@@ -34,6 +34,7 @@ import { useTrip } from '../../contexts/TripContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import GoogleMapsSelector from './GoogleMapsSelector';
+import { useAppState } from '../../contexts/AppStateContext';
 
 interface Attraction {
   id: string;
@@ -48,25 +49,11 @@ interface Attraction {
 }
 
 const TravelBuddyAssistant: React.FC = () => {
+  const { appState, updateTravelDetails } = useAppState();
   const [step, setStep] = useState<'input' | 'results' | 'itinerary' | 'visa' | 'buddies' | 'itineraryOptions' | 'map'>('input');
-  const [travelDetails, setTravelDetails] = useState({
-    startingLocation: '',
-    destination: '',
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-    travelers: '1',
-    travelStyle: 'adventure',
-    budgets: {
-      flight: '0',
-      hotel: '0',
-      food: '0',
-      activities: '0',
-      souvenirs: '0'
-    }
-  });
-  const [showBuddies, setShowBuddies] = useState(false);
   const [selectedItinerary, setSelectedItinerary] = useState<number | null>(null);
   const [selectedAttractions, setSelectedAttractions] = useState<Attraction[]>([]);
+  const [showBuddies, setShowBuddies] = useState(false);
   const { addTrip } = useTrip();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -74,18 +61,18 @@ const TravelBuddyAssistant: React.FC = () => {
   const handleInputChange = (field: string, value: string | Date | null) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      setTravelDetails(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev] as Record<string, string>,
-          [child]: typeof value === 'string' ? value.replace(/^0+/, '') : value // Remove leading zeros for strings
-        }
-      }));
+      if (parent === 'budgets') {
+        updateTravelDetails({
+          budgets: {
+            ...appState.travelDetails.budgets,
+            [child]: typeof value === 'string' ? value.replace(/^0+/, '') : value
+          }
+        });
+      }
     } else {
-      setTravelDetails(prev => ({
-        ...prev,
+      updateTravelDetails({
         [field]: value
-      }));
+      });
     }
   };
 
@@ -114,33 +101,33 @@ const TravelBuddyAssistant: React.FC = () => {
   };
 
   const handleSaveTrip = () => {
-    if (!travelDetails.startDate || !travelDetails.endDate) {
+    if (!appState.travelDetails.startDate || !appState.travelDetails.endDate) {
       showToast('Please select valid travel dates', 'error');
       return;
     }
 
     // Calculate total budget
-    const totalBudget = Object.values(travelDetails.budgets).reduce(
+    const totalBudget = Object.values(appState.travelDetails.budgets).reduce(
       (sum, val) => sum + parseInt(val || '0'), 0
     );
 
     // Create a new trip object
     const newTrip = {
       id: Date.now().toString(),
-      title: `Trip to ${travelDetails.destination}`,
-      destination: travelDetails.destination,
-      startDate: travelDetails.startDate,
-      endDate: travelDetails.endDate,
-      travelers: parseInt(travelDetails.travelers),
+      title: `Trip to ${appState.travelDetails.destination}`,
+      destination: appState.travelDetails.destination,
+      startDate: appState.travelDetails.startDate,
+      endDate: appState.travelDetails.endDate,
+      travelers: parseInt(appState.travelDetails.travelers),
       budget: {
         total: totalBudget,
         spent: 0,
         categories: {
-          flights: parseInt(travelDetails.budgets.flight) || 0,
-          hotels: parseInt(travelDetails.budgets.hotel) || 0,
-          food: parseInt(travelDetails.budgets.food) || 0,
-          activities: parseInt(travelDetails.budgets.activities) || 0,
-          transport: parseInt(travelDetails.budgets.souvenirs) || 0
+          flights: parseInt(appState.travelDetails.budgets.flight) || 0,
+          hotels: parseInt(appState.travelDetails.budgets.hotel) || 0,
+          food: parseInt(appState.travelDetails.budgets.food) || 0,
+          activities: parseInt(appState.travelDetails.budgets.activities) || 0,
+          transport: parseInt(appState.travelDetails.budgets.souvenirs) || 0
         }
       },
       itinerary: [],
@@ -191,7 +178,7 @@ const TravelBuddyAssistant: React.FC = () => {
             </label>
             <input
               type="text"
-              value={travelDetails.startingLocation}
+              value={appState.travelDetails.startingLocation}
               onChange={(e) => handleInputChange('startingLocation', e.target.value)}
               placeholder="e.g., New York, USA"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -205,7 +192,7 @@ const TravelBuddyAssistant: React.FC = () => {
             </label>
             <input
               type="text"
-              value={travelDetails.destination}
+              value={appState.travelDetails.destination}
               onChange={(e) => handleInputChange('destination', e.target.value)}
               placeholder="e.g., Paris, France"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -222,11 +209,11 @@ const TravelBuddyAssistant: React.FC = () => {
             </label>
             <div className="relative">
               <DatePicker
-                selected={travelDetails.startDate}
+                selected={appState.travelDetails.startDate}
                 onChange={(date) => handleInputChange('startDate', date)}
                 selectsStart
-                startDate={travelDetails.startDate}
-                endDate={travelDetails.endDate}
+                startDate={appState.travelDetails.startDate}
+                endDate={appState.travelDetails.endDate}
                 minDate={new Date()}
                 placeholderText="Select start date"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -242,12 +229,12 @@ const TravelBuddyAssistant: React.FC = () => {
             </label>
             <div className="relative">
               <DatePicker
-                selected={travelDetails.endDate}
+                selected={appState.travelDetails.endDate}
                 onChange={(date) => handleInputChange('endDate', date)}
                 selectsEnd
-                startDate={travelDetails.startDate}
-                endDate={travelDetails.endDate}
-                minDate={travelDetails.startDate}
+                startDate={appState.travelDetails.startDate}
+                endDate={appState.travelDetails.endDate}
+                minDate={appState.travelDetails.startDate}
                 placeholderText="Select end date"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
@@ -263,7 +250,7 @@ const TravelBuddyAssistant: React.FC = () => {
             Number of Travelers
           </label>
           <select
-            value={travelDetails.travelers}
+            value={appState.travelDetails.travelers}
             onChange={(e) => handleInputChange('travelers', e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
@@ -286,7 +273,7 @@ const TravelBuddyAssistant: React.FC = () => {
                 type="button"
                 onClick={() => handleInputChange('travelStyle', style.id)}
                 className={`p-4 rounded-lg border-2 text-left transition-all ${
-                  travelDetails.travelStyle === style.id
+                  appState.travelDetails.travelStyle === style.id
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
@@ -315,7 +302,7 @@ const TravelBuddyAssistant: React.FC = () => {
               </label>
               <input
                 type="number"
-                value={travelDetails.budgets.flight}
+                value={appState.travelDetails.budgets.flight}
                 onChange={(e) => handleInputChange('budgets.flight', e.target.value)}
                 placeholder="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -328,7 +315,7 @@ const TravelBuddyAssistant: React.FC = () => {
               </label>
               <input
                 type="number"
-                value={travelDetails.budgets.hotel}
+                value={appState.travelDetails.budgets.hotel}
                 onChange={(e) => handleInputChange('budgets.hotel', e.target.value)}
                 placeholder="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -340,7 +327,7 @@ const TravelBuddyAssistant: React.FC = () => {
               </label>
               <input
                 type="number"
-                value={travelDetails.budgets.food}
+                value={appState.travelDetails.budgets.food}
                 onChange={(e) => handleInputChange('budgets.food', e.target.value)}
                 placeholder="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -353,7 +340,7 @@ const TravelBuddyAssistant: React.FC = () => {
               </label>
               <input
                 type="number"
-                value={travelDetails.budgets.activities}
+                value={appState.travelDetails.budgets.activities}
                 onChange={(e) => handleInputChange('budgets.activities', e.target.value)}
                 placeholder="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -365,7 +352,7 @@ const TravelBuddyAssistant: React.FC = () => {
               </label>
               <input
                 type="number"
-                value={travelDetails.budgets.souvenirs}
+                value={appState.travelDetails.budgets.souvenirs}
                 onChange={(e) => handleInputChange('budgets.souvenirs', e.target.value)}
                 placeholder="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -393,7 +380,7 @@ const TravelBuddyAssistant: React.FC = () => {
     >
       <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">Choose Your Ideal Itinerary</h2>
       <p className="text-xl text-gray-600 text-center mb-12 max-w-3xl mx-auto">
-        We've created three personalized itineraries for your trip to {travelDetails.destination}. 
+        We've created three personalized itineraries for your trip to {appState.travelDetails.destination}. 
         Each offers a different experience based on your preferences.
       </p>
 
@@ -659,11 +646,11 @@ const TravelBuddyAssistant: React.FC = () => {
           <Sparkles className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Your Trip to {travelDetails.destination}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Your Trip to {appState.travelDetails.destination}</h2>
           <p className="text-gray-600">
-            {travelDetails.startDate && travelDetails.endDate ? 
-              `${travelDetails.startDate.toLocaleDateString()} - ${travelDetails.endDate.toLocaleDateString()}` : 
-              "Date range not specified"} • {travelDetails.travelers} {parseInt(travelDetails.travelers) === 1 ? 'Traveler' : 'Travelers'}
+            {appState.travelDetails.startDate && appState.travelDetails.endDate ? 
+              `${appState.travelDetails.startDate.toLocaleDateString()} - ${appState.travelDetails.endDate.toLocaleDateString()}` : 
+              "Date range not specified"} • {appState.travelDetails.travelers} {parseInt(appState.travelDetails.travelers) === 1 ? 'Traveler' : 'Travelers'}
           </p>
         </div>
       </div>
@@ -734,14 +721,14 @@ const TravelBuddyAssistant: React.FC = () => {
               <MapPin className="w-5 h-5 text-gray-500 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">From</p>
-                <p className="font-medium text-gray-900">{travelDetails.startingLocation}</p>
+                <p className="font-medium text-gray-900">{appState.travelDetails.startingLocation}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3 mb-3">
               <MapPin className="w-5 h-5 text-gray-500 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">To</p>
-                <p className="font-medium text-gray-900">{travelDetails.destination}</p>
+                <p className="font-medium text-gray-900">{appState.travelDetails.destination}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
@@ -749,8 +736,8 @@ const TravelBuddyAssistant: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">Dates</p>
                 <p className="font-medium text-gray-900">
-                  {travelDetails.startDate && travelDetails.endDate ? 
-                    `${travelDetails.startDate.toLocaleDateString()} - ${travelDetails.endDate.toLocaleDateString()}` : 
+                  {appState.travelDetails.startDate && appState.travelDetails.endDate ? 
+                    `${appState.travelDetails.startDate.toLocaleDateString()} - ${appState.travelDetails.endDate.toLocaleDateString()}` : 
                     "Date range not specified"}
                 </p>
               </div>
@@ -761,7 +748,7 @@ const TravelBuddyAssistant: React.FC = () => {
               <Users className="w-5 h-5 text-gray-500 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-500">Travelers</p>
-                <p className="font-medium text-gray-900">{travelDetails.travelers} {parseInt(travelDetails.travelers) === 1 ? 'Person' : 'People'}</p>
+                <p className="font-medium text-gray-900">{appState.travelDetails.travelers} {parseInt(appState.travelDetails.travelers) === 1 ? 'Person' : 'People'}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3 mb-3">
@@ -769,7 +756,7 @@ const TravelBuddyAssistant: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">Travel Style</p>
                 <p className="font-medium text-gray-900">
-                  {travelStyles.find(style => style.id === travelDetails.travelStyle)?.label || 'Adventure Seeker'}
+                  {travelStyles.find(style => style.id === appState.travelDetails.travelStyle)?.label || 'Adventure Seeker'}
                 </p>
               </div>
             </div>
@@ -846,7 +833,7 @@ const TravelBuddyAssistant: React.FC = () => {
             </div>
             
             <p className="text-gray-600 mb-6">
-              Connect with like-minded travelers who are visiting {travelDetails.destination} around the same time. 
+              Connect with like-minded travelers who are visiting {appState.travelDetails.destination} around the same time. 
               Finding travel buddies is optional and can enhance your travel experience.
             </p>
             
@@ -869,10 +856,10 @@ const TravelBuddyAssistant: React.FC = () => {
   );
 
   const formatDateRange = () => {
-    if (!travelDetails.startDate || !travelDetails.endDate) return "";
+    if (!appState.travelDetails.startDate || !appState.travelDetails.endDate) return "";
     
     const options = { year: 'numeric', month: 'short', day: 'numeric' } as const;
-    return `${travelDetails.startDate.toLocaleDateString('en-US', options)} - ${travelDetails.endDate.toLocaleDateString('en-US', options)}`;
+    return `${appState.travelDetails.startDate.toLocaleDateString('en-US', options)} - ${appState.travelDetails.endDate.toLocaleDateString('en-US', options)}`;
   };
 
   return (
@@ -889,12 +876,12 @@ const TravelBuddyAssistant: React.FC = () => {
             ← Back to results
           </button>
           <ItineraryPlanner
-            destination={travelDetails.destination}
-            startDate={travelDetails.startDate || new Date()}
-            endDate={travelDetails.endDate || new Date(new Date().setDate(new Date().getDate() + 7))}
-            budget={Object.values(travelDetails.budgets).reduce((sum, val) => sum + parseInt(val || '0'), 0)}
-            activityTypes={[travelDetails.travelStyle]}
-            travelers={parseInt(travelDetails.travelers)}
+            destination={appState.travelDetails.destination}
+            startDate={appState.travelDetails.startDate || new Date()}
+            endDate={appState.travelDetails.endDate || new Date(new Date().setDate(new Date().getDate() + 7))}
+            budget={Object.values(appState.travelDetails.budgets).reduce((sum, val) => sum + parseInt(val || '0'), 0)}
+            activityTypes={[appState.travelDetails.travelStyle]}
+            travelers={parseInt(appState.travelDetails.travelers)}
           />
         </div>
       )}
@@ -907,11 +894,11 @@ const TravelBuddyAssistant: React.FC = () => {
             ← Back to results
           </button>
           <VisaInformation
-            fromCountry={travelDetails.startingLocation}
-            toCountry={travelDetails.destination}
-            travelDate={travelDetails.startDate || new Date()}
-            tripDuration={travelDetails.startDate && travelDetails.endDate ? 
-              Math.ceil((travelDetails.endDate.getTime() - travelDetails.startDate.getTime()) / (1000 * 60 * 60 * 24)) : 7}
+            fromCountry={appState.travelDetails.startingLocation}
+            toCountry={appState.travelDetails.destination}
+            travelDate={appState.travelDetails.startDate || new Date()}
+            tripDuration={appState.travelDetails.startDate && appState.travelDetails.endDate ? 
+              Math.ceil((appState.travelDetails.endDate.getTime() - appState.travelDetails.startDate.getTime()) / (1000 * 60 * 60 * 24)) : 7}
             travelPurpose="tourism"
           />
         </div>
@@ -925,7 +912,7 @@ const TravelBuddyAssistant: React.FC = () => {
             ← Back to results
           </button>
           <GoogleMapsSelector 
-            destination={travelDetails.destination}
+            destination={appState.travelDetails.destination}
             onAttractionsSelected={handleAttractionsSelected}
             selectedAttractions={selectedAttractions}
           />
