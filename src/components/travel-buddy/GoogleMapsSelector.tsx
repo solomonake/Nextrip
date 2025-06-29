@@ -38,11 +38,14 @@ const GoogleMapsSelector: React.FC<GoogleMapsSelectorProps> = ({
 
   // Get API key from environment variables
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  const hasValidApiKey = apiKey && apiKey !== 'YOUR_API_KEY' && apiKey.trim() !== '';
+  const hasValidApiKey = apiKey && apiKey !== 'YOUR_API_KEY_HERE' && apiKey.trim() !== '' && apiKey !== 'YOUR_API_KEY';
 
+  // Only load Google Maps if we have a valid API key
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: hasValidApiKey ? apiKey : 'demo-key' // Use demo key to prevent loading if no valid key
+    googleMapsApiKey: apiKey || '',
+    // Don't load the script if we don't have a valid API key
+    preventGoogleFontsLoading: !hasValidApiKey,
   });
 
   // Geocode the destination to get coordinates
